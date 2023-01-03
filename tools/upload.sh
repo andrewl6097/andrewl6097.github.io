@@ -3,7 +3,7 @@
 set -e
 set -x
 
-bundle exec jekyll b
+rbenv exec bundle exec jekyll b
 cp -av img/ _site/assets/img/
 
 aws s3 sync _site s3://run-parallel.sh/
