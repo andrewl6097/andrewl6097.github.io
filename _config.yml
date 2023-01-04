@@ -20,7 +20,7 @@ timezone: America/Los_Angeles
 
 title: Andrew's Tinker Blog                          # the main title
 
-tagline: single-handedly keeping digikey in business
+tagline: ''
 
 description: >-                        # used by seo meta and the atom feed
   A place to put long-form thoughts and wakthroughs of my thoughts and design processes.
@@ -38,9 +38,10 @@ social:
   # Change to your full name.
   # It will be displayed as the default author of the posts and the copyright owner in the Footer
   name: Andrew Lusk
-  email: andrew.lusk@gmail.com             # change to your email address
+  email: ''             # change to your email address
   links:
     # The first element serves as the copyright owner's link
+    - https://hachyderm.io/@andrew_lusk
     - https://twitter.com/andrew_lusk      # change to your twitter homepage
     - https://github.com/andrewl6097       # change to your github homepage
     # Uncomment below to add more social links
