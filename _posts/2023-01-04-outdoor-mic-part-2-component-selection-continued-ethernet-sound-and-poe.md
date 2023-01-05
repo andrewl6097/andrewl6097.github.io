@@ -1,7 +1,7 @@
 ---
 layout: post
 title: 'Outdoor Mic Part 2: Component Selection Continued (ethernet, sound, and PoE)'
-date: '2023-01-04 08:46:00 -0800'
+date: '2023-01-04 16:57:00 -0800'
 categories: []
 tags: ["Component Selection", "Outdoor Mic"]
 comments: false
