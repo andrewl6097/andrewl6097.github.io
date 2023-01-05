@@ -87,6 +87,10 @@ func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch
 func push_metrics_to_cloudwatch(wg *sync.WaitGroup, cw_client *cloudwatch.Client, events []metrics_record) {
 	defer wg.Done()
 
+	if len(events) == 0 {
+		return
+	}
+
 	fmt.Printf("Sending %d events to CW\n", len(events))
 
 	datums := make([]types.MetricDatum, len(events))
@@ -141,7 +145,7 @@ func push_all_metrics_to_cloudwatch(cw_client *cloudwatch.Client, events chan me
 
 func handler(ctx context.Context, s3Event events.S3Event) {
 	// Load the Shared AWS Configuration (~/.aws/config)
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithClientLogMode(aws.LogRequestWithBody))
+	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Fatal(err)
 	}
