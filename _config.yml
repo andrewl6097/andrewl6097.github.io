@@ -159,6 +159,9 @@ exclude:
   - gulpfile.js
   - node_modules
   - package*.json
+  - base_metrics_pusher
+  - metrics_pusher
+  - img
 
 jekyll-archives:
   enabled: [categories, tags]

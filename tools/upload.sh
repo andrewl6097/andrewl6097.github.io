@@ -11,7 +11,7 @@ aws s3 sync _site s3://run-parallel.sh/
 # Create an invalidation list of every post that's changed since the
 # last-uploaded commit, plus anything in staging.
 CUR_COMMIT=`git log | head -n 1 | cut -d' ' -f 2`
-LAST_COMMIT=`cat last-uploaded-commit`
+LAST_COMMIT=`cat tools/last-uploaded-commit`
 POSTS=""
 
 for post in `git diff $LAST_COMMIT|grep -- "^--- a/_posts/"|cut -d'/' -f 3`; do
@@ -30,4 +30,4 @@ done
 
 aws cloudfront create-invalidation --distribution-id EO0JOSZAC367N --paths /index.html /feed.xml /categories/index.html /posts/index.html /tags/index.html /archives/index.html $PATHS
 
-echo $CUR_COMMIT > last-uploaded-commit
+echo $CUR_COMMIT > tools/last-uploaded-commit
