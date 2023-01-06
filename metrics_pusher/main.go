@@ -11,22 +11,54 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	ddbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"io"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
 type metrics_batch struct {
-	metrics []metrics_record
+	metrics     []metrics_record
+	subscribers map[string]int
 }
 
 type metrics_record struct {
 	Page      string
 	Time      time.Time
 	UserAgent string
+}
+
+func is_rss(user_agent string) bool {
+	return strings.HasPrefix(user_agent, "Feedbin") || strings.HasPrefix(user_agent, "Feedly/")
+}
+
+func get_feed_subscribers(user_agent string) map[string]int {
+	ret := make(map[string]int)
+
+	if !is_rss(user_agent) {
+		return ret
+	}
+
+	if strings.HasPrefix(user_agent, "Feedbin") {
+		num, err := strconv.Atoi(strings.Split(user_agent, "%20")[3])
+		if err == nil {
+			ret["Feedbin"] = num
+		}
+	}
+
+	if strings.HasPrefix(user_agent, "Feedly") {
+		num, err := strconv.Atoi(strings.Split(user_agent, "%20")[2])
+		if err == nil {
+			ret["Feedly"] = num
+		}
+	}
+
+	return ret
 }
 
 func normalize_user_agent(user_agent string) (string, error) {
@@ -50,7 +82,7 @@ func normalize_user_agent(user_agent string) (string, error) {
 		return "Mastodon Bot", nil // UA
 	}
 
-	if strings.HasPrefix(user_agent, "Feedbin") || strings.HasPrefix(user_agent, "Feedly/") {
+	if is_rss(user_agent) {
 		return "RSS Feed Reader", nil // UA
 	}
 
@@ -58,14 +90,24 @@ func normalize_user_agent(user_agent string) (string, error) {
 		return "Mastodon Bot", nil // UA
 	}
 
-	if strings.HasPrefix(user_agent, "Expanse") {
+	if strings.HasPrefix(user_agent, "Expanse") ||
+		strings.HasSuffix(user_agent, "ahrefs.com/robot/)") ||
+		strings.Contains(user_agent, "YandexBot") ||
+		strings.Contains(user_agent, "Googlebot") ||
+		strings.Contains(user_agent, "TrendsmapResolver") {
 		return "Scanners/Crawlers", nil // UA
+	}
+
+	if strings.Contains(user_agent, "%20Linux%20") {
+		return "Linux", nil // UA
 	}
 
 	return "", errors.New(fmt.Sprintf("Unknown UA: %s", user_agent))
 }
 
 func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch) {
+	ret := make(map[string]int)
+
 	object, err := s3_client.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String("run-parallel.sh-logs"),
 		Key:    key,
@@ -107,6 +149,10 @@ func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch
 		uri := parts[7]
 		user_agent := parts[10]
 
+		for k, v := range get_feed_subscribers(user_agent) {
+			ret[k] = v
+		}
+
 		time_string := fmt.Sprintf("%s:%s UTC", datetime_parts[0], datetime_parts[1])
 		log.Printf("Request for %s at %s from %s", uri, time_string, user_agent)
 		t, err := time.Parse("2006-01-02:15:04:05 MST", time_string)
@@ -120,7 +166,33 @@ func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch
 		log.Printf("Metric URL is %s", metric_url)
 		records = append(records, metrics_record{Page: metric_url, Time: t, UserAgent: user_agent})
 	}
-	batches <- metrics_batch{metrics: records}
+	batches <- metrics_batch{metrics: records, subscribers: ret}
+}
+
+func push_subscribers_to_ddb(ddb_client *dynamodb.Client, subscribers map[string]int, done chan bool) {
+	defer close(done)
+
+	if len(subscribers) == 0 {
+		return
+	}
+
+	ddb_writes := make([]ddbtypes.WriteRequest, 0, len(subscribers))
+	for aggregator, count := range subscribers {
+		attrs := make(map[string]ddbtypes.AttributeValue)
+		attrs["Count"] = &ddbtypes.AttributeValueMemberN{Value: strconv.Itoa(count)}
+		attrs["Aggregator"] = &ddbtypes.AttributeValueMemberS{Value: aggregator}
+
+		ddb_writes = append(ddb_writes, ddbtypes.WriteRequest{PutRequest: &ddbtypes.PutRequest{Item: attrs}})
+	}
+
+	batch_ddb_writes := make(map[string][]ddbtypes.WriteRequest)
+	batch_ddb_writes["BlogRSSSubscriptions"] = ddb_writes
+	_, err := ddb_client.BatchWriteItem(context.TODO(), &dynamodb.BatchWriteItemInput{RequestItems: batch_ddb_writes})
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		fmt.Printf("Pushed subscribers to DDB")
+	}
 }
 
 func push_metrics_to_cloudwatch(wg *sync.WaitGroup, cw_client *cloudwatch.Client, events []metrics_record) {
@@ -203,7 +275,7 @@ func push_all_metrics_to_cloudwatch(cw_client *cloudwatch.Client, events chan me
 
 func handler(ctx context.Context, s3Event events.S3Event) {
 	// Load the Shared AWS Configuration (~/.aws/config)
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithClientLogMode(aws.LogRequestWithBody))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -211,6 +283,7 @@ func handler(ctx context.Context, s3Event events.S3Event) {
 	// Create an Amazon S3 service client
 	s3_client := s3.NewFromConfig(cfg)
 	cw_client := cloudwatch.NewFromConfig(cfg)
+	ddb_client := dynamodb.NewFromConfig(cfg)
 
 	keys := make([]string, 0)
 
@@ -232,18 +305,27 @@ func handler(ctx context.Context, s3Event events.S3Event) {
 
 	events := make(chan metrics_record, 1000)
 
-	done := make(chan bool)
-	go push_all_metrics_to_cloudwatch(cw_client, events, done)
+	metrics_done := make(chan bool)
+	ddb_done := make(chan bool)
+	go push_all_metrics_to_cloudwatch(cw_client, events, metrics_done)
+
+	subscribers := make(map[string]int)
 
 	for i := 0; i < len(keys); i++ {
 		metrics_batch := <-metrics_batches
 		fmt.Printf("Got a metrics batch with %d records\n", len(metrics_batch.metrics))
+		for k, v := range metrics_batch.subscribers {
+			subscribers[k] = v
+		}
+
 		for _, record := range metrics_batch.metrics {
 			events <- record
 		}
 	}
+	go push_subscribers_to_ddb(ddb_client, subscribers, ddb_done)
 	close(events)
-	_ = <-done
+	_ = <-metrics_done
+	_ = <-ddb_done
 }
 
 func main() {

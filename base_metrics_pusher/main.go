@@ -8,7 +8,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	ddbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -24,6 +27,7 @@ func handler(ctx context.Context) {
 	}
 
 	cw_client := cloudwatch.NewFromConfig(cfg)
+	ddb_client := dynamodb.NewFromConfig(cfg)
 
 	namespace := aws.String("Blog")
 
@@ -86,6 +90,35 @@ func handler(ctx context.Context) {
 	} else {
 		fmt.Printf("Sent %d events to CW\n", len(clients))
 	}
+
+	scan_result, err := ddb_client.Scan(context.TODO(), &dynamodb.ScanInput{
+		TableName: aws.String("BlogRSSSubscriptions"),
+	})
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	subscribers := 0
+	for _, item := range scan_result.Items {
+		i, err := strconv.Atoi(item["Count"].(*ddbtypes.AttributeValueMemberN).Value)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		subscribers += i
+	}
+	cw_client.PutMetricData(context.TODO(), &cloudwatch.PutMetricDataInput{
+		Namespace: namespace,
+		MetricData: []types.MetricDatum{
+			{
+				MetricName: aws.String("feed-subscribers"),
+				Timestamp:  &t,
+				Value:      aws.Float64(float64(subscribers)),
+				Unit:       types.StandardUnitCount,
+			},
+		},
+	})
+	fmt.Printf("Pushed subscriber metric: %d\n", subscribers)
 }
 
 func main() {
