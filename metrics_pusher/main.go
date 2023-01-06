@@ -48,21 +48,21 @@ func get_feed_subscribers(user_agent string) map[string]int {
 
 	if strings.HasPrefix(user_agent, "Feedbin") {
 		num, err := strconv.Atoi(strings.Split(user_agent, "%20")[3])
-		if err == nil {
+		if err == nil && num > 0 {
 			ret["Feedbin"] = num
 		}
 	}
 
 	if strings.HasPrefix(user_agent, "Feedly") {
 		num, err := strconv.Atoi(strings.Split(user_agent, "%20")[2])
-		if err == nil {
+		if err == nil && num > 0 {
 			ret["Feedly"] = num
 		}
 	}
 
 	if strings.HasPrefix(user_agent, "NewsBlur") {
 		num, err := strconv.Atoi(strings.Split(user_agent, "%20")[4])
-		if err == nil {
+		if err == nil && num > 0 {
 			ret["NewsBlur"] = num
 		}
 	}
@@ -75,7 +75,7 @@ func normalize_user_agent(user_agent string) (string, error) {
 		return "RSS Feed Reader", nil // UA
 	}
 
-	if strings.Contains(user_agent, "Mastodon/") && strings.HasSuffix(user_agent, "Bot") {
+	if strings.Contains(user_agent, "Mastodon/") {
 		return "Mastodon Bot", nil // UA
 	}
 
@@ -104,6 +104,7 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.Contains(user_agent, "Googlebot") ||
 		strings.Contains(user_agent, "TrendsmapResolver") ||
 		strings.HasPrefix(user_agent, "python-requests") ||
+		strings.HasPrefix(user_agent, "Cairn-Grabber") ||
 		strings.HasPrefix(user_agent, "NewsBlur%20Feed%20Finder") {
 		return "Scanners/Crawlers", nil // UA
 	}
