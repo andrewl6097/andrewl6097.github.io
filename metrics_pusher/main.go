@@ -71,7 +71,19 @@ func get_feed_subscribers(user_agent string) map[string]int {
 }
 
 func normalize_user_agent(user_agent string) (string, error) {
+	if is_rss(user_agent) {
+		return "RSS Feed Reader", nil // UA
+	}
+
 	if strings.Contains(user_agent, "Mastodon/") && strings.HasSuffix(user_agent, "Bot") {
+		return "Mastodon Bot", nil // UA
+	}
+
+	if strings.HasPrefix(user_agent, "Pleroma") {
+		return "Mastodon Bot", nil // UA
+	}
+
+	if strings.HasPrefix(user_agent, "Akkoma") {
 		return "Mastodon Bot", nil // UA
 	}
 
@@ -86,19 +98,6 @@ func normalize_user_agent(user_agent string) (string, error) {
 	if strings.Contains(user_agent, "Macintosh;") {
 		return "Mac", nil // UA
 	}
-
-	if strings.HasPrefix(user_agent, "Pleroma") {
-		return "Mastodon Bot", nil // UA
-	}
-
-	if is_rss(user_agent) {
-		return "RSS Feed Reader", nil // UA
-	}
-
-	if strings.HasPrefix(user_agent, "Akkoma") {
-		return "Mastodon Bot", nil // UA
-	}
-
 	if strings.HasPrefix(user_agent, "Expanse") ||
 		strings.HasSuffix(user_agent, "ahrefs.com/robot/)") ||
 		strings.Contains(user_agent, "YandexBot") ||
@@ -193,10 +192,13 @@ func push_subscribers_to_ddb(ddb_client *dynamodb.Client, subscribers map[string
 	}
 
 	ddb_writes := make([]ddbtypes.WriteRequest, 0, len(subscribers))
+	epoch_seconds := time.Now().Unix()
+
 	for aggregator, count := range subscribers {
 		attrs := make(map[string]ddbtypes.AttributeValue)
 		attrs["Count"] = &ddbtypes.AttributeValueMemberN{Value: strconv.Itoa(count)}
 		attrs["Aggregator"] = &ddbtypes.AttributeValueMemberS{Value: aggregator}
+		attrs["Timestamp"] = &ddbtypes.AttributeValueMemberN{Value: strconv.FormatInt(epoch_seconds, 10)}
 
 		ddb_writes = append(ddb_writes, ddbtypes.WriteRequest{PutRequest: &ddbtypes.PutRequest{Item: attrs}})
 	}
