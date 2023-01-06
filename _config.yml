@@ -137,6 +137,9 @@ defaults:
       permalink: /:title/
       dynamic_title: true    # Hide title in mobile screens.
 
+plugins:
+  - jekyll-feed
+
 sass:
   style: compressed
 
