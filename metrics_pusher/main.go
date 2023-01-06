@@ -3,6 +3,7 @@ package main
 import (
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -23,8 +24,45 @@ type metrics_batch struct {
 }
 
 type metrics_record struct {
-	Page string
-	Time time.Time
+	Page      string
+	Time      time.Time
+	UserAgent string
+}
+
+func normalize_user_agent(user_agent string) (string, error) {
+	if strings.Contains(user_agent, "Mastodon/") && strings.HasSuffix(user_agent, "Bot") {
+		return "Mastodon Bot", nil // UA
+	}
+
+	if strings.HasPrefix(user_agent, "Twitterbot/") {
+		return "Twitter Bot", nil // UA
+	}
+
+	if strings.Contains(user_agent, "iPhone;") {
+		return "iPhone", nil // UA
+	}
+
+	if strings.Contains(user_agent, "Macintosh;") {
+		return "Mac", nil // UA
+	}
+
+	if strings.HasPrefix(user_agent, "Pleroma") {
+		return "Mastodon Bot", nil // UA
+	}
+
+	if strings.HasPrefix(user_agent, "Feedbin") || strings.HasPrefix(user_agent, "Feedly/") {
+		return "RSS Feed Reader", nil // UA
+	}
+
+	if strings.HasPrefix(user_agent, "Akkoma") {
+		return "Mastodon Bot", nil // UA
+	}
+
+	if strings.HasPrefix(user_agent, "Expanse") {
+		return "Scanners/Crawlers", nil // UA
+	}
+
+	return "", errors.New(fmt.Sprintf("Unknown UA: %s", user_agent))
 }
 
 func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch) {
@@ -67,9 +105,10 @@ func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch
 		parts := strings.Fields(line)
 		var datetime_parts []string = parts[0:2]
 		uri := parts[7]
+		user_agent := parts[10]
 
 		time_string := fmt.Sprintf("%s:%s UTC", datetime_parts[0], datetime_parts[1])
-		log.Printf("Request for %s at %s", uri, time_string)
+		log.Printf("Request for %s at %s from %s", uri, time_string, user_agent)
 		t, err := time.Parse("2006-01-02:15:04:05 MST", time_string)
 		if err != nil {
 			log.Fatal(err)
@@ -79,7 +118,7 @@ func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch
 		log.Printf("Time as parsed is %s", t.Format(time.UnixDate))
 		var metric_url = strings.TrimSuffix(fmt.Sprintf("path:%s", uri), "/")
 		log.Printf("Metric URL is %s", metric_url)
-		records = append(records, metrics_record{Page: metric_url, Time: t})
+		records = append(records, metrics_record{Page: metric_url, Time: t, UserAgent: user_agent})
 	}
 	batches <- metrics_batch{metrics: records}
 }
@@ -93,10 +132,16 @@ func push_metrics_to_cloudwatch(wg *sync.WaitGroup, cw_client *cloudwatch.Client
 
 	fmt.Printf("Sending %d events to CW\n", len(events))
 
-	datums := make([]types.MetricDatum, len(events))
+	datums := make([]types.MetricDatum, len(events)*2)
 
 	for i, event := range events {
-		datums[i] = types.MetricDatum{
+		ua, err := normalize_user_agent(event.UserAgent)
+		if err != nil {
+			log.Printf("Unknown UA: %s", event.UserAgent)
+			ua = "unknown"
+		}
+
+		datums[i*2] = types.MetricDatum{
 			MetricName: aws.String("requests"),
 			Timestamp:  &event.Time,
 			Value:      aws.Float64(1),
@@ -105,6 +150,19 @@ func push_metrics_to_cloudwatch(wg *sync.WaitGroup, cw_client *cloudwatch.Client
 				{
 					Name:  aws.String("path"),
 					Value: aws.String(event.Page),
+				},
+			},
+		}
+
+		datums[i*2+1] = types.MetricDatum{
+			MetricName: aws.String("requests"),
+			Timestamp:  &event.Time,
+			Value:      aws.Float64(1),
+			Unit:       types.StandardUnitCount,
+			Dimensions: []types.Dimension{
+				{
+					Name:  aws.String("client"),
+					Value: aws.String(ua),
 				},
 			},
 		}
@@ -131,7 +189,7 @@ func push_all_metrics_to_cloudwatch(cw_client *cloudwatch.Client, events chan me
 	for metrics_event := range events {
 		to_push = append(to_push, metrics_event)
 		count += 1
-		if count == 1000 {
+		if count == 500 {
 			wg.Add(1)
 			go push_metrics_to_cloudwatch(&wg, cw_client, to_push)
 			to_push = make([]metrics_record, 0, 50)

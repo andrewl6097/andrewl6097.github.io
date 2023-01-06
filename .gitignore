@@ -16,6 +16,7 @@ vendor
 node_modules
 package-lock.json
 base_metrics_pusher/get_all_files.go
+base_metrics_pusher/get_all_clients.go
 base_metrics_pusher/main
 base_metrics_pusher/main.zip
 metrics_pusher/main

@@ -22,6 +22,27 @@ cat >> get_all_files.go <<END
 }
 END
 
-GOOS=linux GOARCH=amd64 go build -o main main.go get_all_files.go
+cat > get_all_clients.go <<END
+package main
+
+func get_all_clients() []string {
+    ret := make([]string, 0)
+    ret = append(ret, "unknown")
+END
+
+IFS=$'\n'
+
+for i in `grep "// UA" ../metrics_pusher/main.go|cut -d'"' -f 2|sed -e 's/^/"/'|sed -e 's/$/"/'`; do
+    cat >> get_all_clients.go <<END
+    ret = append(ret, $i)
+END
+done
+
+cat >> get_all_clients.go <<END
+    return ret
+}
+END
+
+GOOS=linux GOARCH=amd64 go build -o main main.go get_all_files.go get_all_clients.go
 
 zip main.zip main

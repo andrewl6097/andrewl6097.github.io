@@ -25,7 +25,7 @@ func handler(ctx context.Context) {
 
 	cw_client := cloudwatch.NewFromConfig(cfg)
 
-	var namespace string = "Blog"
+	namespace := aws.String("Blog")
 
 	datums := make([]types.MetricDatum, len(files))
 
@@ -47,7 +47,7 @@ func handler(ctx context.Context) {
 	}
 
 	_, err = cw_client.PutMetricData(context.TODO(), &cloudwatch.PutMetricDataInput{
-		Namespace:  &namespace,
+		Namespace:  namespace,
 		MetricData: datums,
 	})
 	if err != nil {
@@ -55,6 +55,36 @@ func handler(ctx context.Context) {
 		return
 	} else {
 		fmt.Printf("Sent %d events to CW\n", len(files))
+	}
+
+	clients := get_all_clients()
+
+	datums = make([]types.MetricDatum, len(clients))
+
+	for i, client := range clients {
+		datums[i] = types.MetricDatum{
+			MetricName: aws.String("requests"),
+			Timestamp:  &t,
+			Value:      aws.Float64(0),
+			Unit:       types.StandardUnitCount,
+			Dimensions: []types.Dimension{
+				{
+					Name:  aws.String("client"),
+					Value: aws.String(client),
+				},
+			},
+		}
+	}
+
+	_, err = cw_client.PutMetricData(context.TODO(), &cloudwatch.PutMetricDataInput{
+		Namespace:  namespace,
+		MetricData: datums,
+	})
+	if err != nil {
+		log.Fatal(err)
+		return
+	} else {
+		fmt.Printf("Sent %d events to CW\n", len(clients))
 	}
 }
 
