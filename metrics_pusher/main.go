@@ -34,7 +34,9 @@ type metrics_record struct {
 }
 
 func is_rss(user_agent string) bool {
-	return strings.HasPrefix(user_agent, "Feedbin") || strings.HasPrefix(user_agent, "Feedly/")
+	return strings.HasPrefix(user_agent, "Feedbin") ||
+		strings.HasPrefix(user_agent, "Feedly/") ||
+		strings.HasPrefix(user_agent, "NewsBlur%20Page%20Fetcher")
 }
 
 func get_feed_subscribers(user_agent string) map[string]int {
@@ -55,6 +57,13 @@ func get_feed_subscribers(user_agent string) map[string]int {
 		num, err := strconv.Atoi(strings.Split(user_agent, "%20")[2])
 		if err == nil {
 			ret["Feedly"] = num
+		}
+	}
+
+	if strings.HasPrefix(user_agent, "NewsBlur") {
+		num, err := strconv.Atoi(strings.Split(user_agent, "%20")[4])
+		if err == nil {
+			ret["NewsBlur"] = num
 		}
 	}
 
@@ -94,12 +103,22 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.HasSuffix(user_agent, "ahrefs.com/robot/)") ||
 		strings.Contains(user_agent, "YandexBot") ||
 		strings.Contains(user_agent, "Googlebot") ||
-		strings.Contains(user_agent, "TrendsmapResolver") {
+		strings.Contains(user_agent, "TrendsmapResolver") ||
+		strings.HasPrefix(user_agent, "python-requests") ||
+		strings.HasPrefix(user_agent, "NewsBlur%20Feed%20Finder") {
 		return "Scanners/Crawlers", nil // UA
 	}
 
 	if strings.Contains(user_agent, "%20Linux%20") {
 		return "Linux", nil // UA
+	}
+
+	if strings.Contains(user_agent, "%20(Android%20") {
+		return "Android", nil // UA
+	}
+
+	if strings.Contains(user_agent, "20(Windows%20NT%20") {
+		return "Windows", nil // UA
 	}
 
 	return "", errors.New(fmt.Sprintf("Unknown UA: %s", user_agent))
@@ -154,16 +173,13 @@ func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch
 		}
 
 		time_string := fmt.Sprintf("%s:%s UTC", datetime_parts[0], datetime_parts[1])
-		log.Printf("Request for %s at %s from %s", uri, time_string, user_agent)
 		t, err := time.Parse("2006-01-02:15:04:05 MST", time_string)
 		if err != nil {
 			log.Fatal(err)
 			batches <- metrics_batch{}
 			return
 		}
-		log.Printf("Time as parsed is %s", t.Format(time.UnixDate))
 		var metric_url = strings.TrimSuffix(fmt.Sprintf("path:%s", uri), "/")
-		log.Printf("Metric URL is %s", metric_url)
 		records = append(records, metrics_record{Page: metric_url, Time: t, UserAgent: user_agent})
 	}
 	batches <- metrics_batch{metrics: records, subscribers: ret}
@@ -275,7 +291,7 @@ func push_all_metrics_to_cloudwatch(cw_client *cloudwatch.Client, events chan me
 
 func handler(ctx context.Context, s3Event events.S3Event) {
 	// Load the Shared AWS Configuration (~/.aws/config)
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithClientLogMode(aws.LogRequestWithBody))
+	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Fatal(err)
 	}
