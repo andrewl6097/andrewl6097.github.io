@@ -105,6 +105,7 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.Contains(user_agent, "TrendsmapResolver") ||
 		strings.HasPrefix(user_agent, "python-requests") ||
 		strings.HasPrefix(user_agent, "Cairn-Grabber") ||
+		strings.HasSuffix(user_agent, "censys.io/)") ||
 		strings.HasPrefix(user_agent, "NewsBlur%20Feed%20Finder") {
 		return "Scanners/Crawlers", nil // UA
 	}
@@ -153,13 +154,12 @@ func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch
 	}
 
 	log_data := string(bytes)
-	log.Printf("log_data (uncompressed) is %d bytes", len(log_data))
-	log.Print(log_data)
 
 	lines := strings.Split(log_data, "\n")
 	records := make([]metrics_record, 0, len(lines))
 
 	for _, line := range lines {
+		log.Printf("%s\n", line)
 		if len(line) == 0 || strings.HasPrefix(line, "#") {
 			continue
 		}
@@ -193,7 +193,7 @@ func push_subscribers_to_ddb(ddb_client *dynamodb.Client, subscribers map[string
 	}
 
 	ddb_writes := make([]ddbtypes.WriteRequest, 0, len(subscribers))
-	epoch_seconds := time.Now().Unix()
+	epoch_seconds := time.Now().Unix() + 86400 // expire in a day
 
 	for aggregator, count := range subscribers {
 		attrs := make(map[string]ddbtypes.AttributeValue)
@@ -220,8 +220,6 @@ func push_metrics_to_cloudwatch(wg *sync.WaitGroup, cw_client *cloudwatch.Client
 	if len(events) == 0 {
 		return
 	}
-
-	fmt.Printf("Sending %d events to CW\n", len(events))
 
 	datums := make([]types.MetricDatum, len(events)*2)
 
