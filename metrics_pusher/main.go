@@ -91,6 +91,10 @@ func normalize_user_agent(user_agent string) (string, error) {
 		return "Twitter Bot", nil // UA
 	}
 
+	if strings.HasPrefix(user_agent, "facebookexternalhit") {
+		return "Facebook Bot", nil // UA
+	}
+
 	if strings.Contains(user_agent, "iPhone;") {
 		return "iPhone", nil // UA
 	}
@@ -107,10 +111,15 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.HasPrefix(user_agent, "Cairn-Grabber") ||
 		strings.HasSuffix(user_agent, "censys.io/)") ||
 		strings.Contains(user_agent, "bot@linkfluence)") ||
-		strings.Contains(user_agent, "Anthill)") ||
-		strings.Contains(user_agent, "GuzzleHttp)") ||
+		strings.HasPrefix(user_agent, "okhttp") ||
+		strings.Contains(user_agent, "Anthill") ||
+		strings.Contains(user_agent, "http://sempi.tech/bot.html") ||
+		strings.Contains(user_agent, "Apache-HttpClient") ||
+		strings.Contains(user_agent, "Mediatoolkitbot") ||
+		strings.HasPrefix(user_agent, "Down") ||
+		strings.Contains(user_agent, "GuzzleHttp") ||
 		strings.Contains(user_agent, "PaperLiBot") ||
-		strings.Contains(user_agent, "AHC)") ||
+		strings.HasPrefix(user_agent, "AHC") ||
 		user_agent == "-" ||
 		strings.HasPrefix(user_agent, "NewsBlur%20Feed%20Finder") {
 		return "Scanners/Crawlers", nil // UA
@@ -120,7 +129,8 @@ func normalize_user_agent(user_agent string) (string, error) {
 		return "Linux", nil // UA
 	}
 
-	if strings.Contains(user_agent, "%20(Android%20") {
+	if strings.Contains(user_agent, "%20(Android%20") ||
+		strings.Contains(user_agent, "%20Android%20") {
 		return "Android", nil // UA
 	}
 
