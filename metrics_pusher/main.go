@@ -106,6 +106,12 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.HasPrefix(user_agent, "python-requests") ||
 		strings.HasPrefix(user_agent, "Cairn-Grabber") ||
 		strings.HasSuffix(user_agent, "censys.io/)") ||
+		strings.Contains(user_agent, "bot@linkfluence)") ||
+		strings.Contains(user_agent, "Anthill)") ||
+		strings.Contains(user_agent, "GuzzleHttp)") ||
+		strings.Contains(user_agent, "PaperLiBot") ||
+		strings.Contains(user_agent, "AHC)") ||
+		user_agent == "-" ||
 		strings.HasPrefix(user_agent, "NewsBlur%20Feed%20Finder") {
 		return "Scanners/Crawlers", nil // UA
 	}
@@ -118,8 +124,14 @@ func normalize_user_agent(user_agent string) (string, error) {
 		return "Android", nil // UA
 	}
 
-	if strings.Contains(user_agent, "20(Windows%20NT%20") {
+	if strings.Contains(user_agent, "20(Windows%20NT%20") ||
+		strings.Contains(user_agent, "%20Windows%20NT%20") {
+
 		return "Windows", nil // UA
+	}
+
+	if strings.Contains(user_agent, "%20CrOS%20") {
+		return "Chrome OS", nil // UA
 	}
 
 	return "", errors.New(fmt.Sprintf("Unknown UA: %s", user_agent))
