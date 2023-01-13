@@ -36,20 +36,34 @@ type metrics_record struct {
 func is_rss(user_agent string) bool {
 	return strings.HasPrefix(user_agent, "Feedbin") ||
 		strings.HasPrefix(user_agent, "Feedly/") ||
+		strings.HasPrefix(user_agent, "Yarr/") ||
+		strings.Contains(user_agent, "inoreader.com") ||
 		strings.HasPrefix(user_agent, "NewsBlur%20Page%20Fetcher")
 }
 
-func get_feed_subscribers(user_agent string) map[string]int {
+func get_feed_subscribers(user_agent string, source_ip string) map[string]int {
 	ret := make(map[string]int)
 
 	if !is_rss(user_agent) {
 		return ret
 	}
 
+	if strings.HasPrefix(user_agent, "Yarr") {
+		// 1 user per IP
+		ret[fmt.Sprintf("Yarr-%s", source_ip)] = 1
+	}
+
 	if strings.HasPrefix(user_agent, "Feedbin") {
 		num, err := strconv.Atoi(strings.Split(user_agent, "%20")[3])
 		if err == nil && num > 0 {
 			ret["Feedbin"] = num
+		}
+	}
+
+	if strings.Contains(user_agent, "inoreader") {
+		num, err := strconv.Atoi(strings.Split(user_agent, "%20")[3])
+		if err == nil && num > 0 {
+			ret["inoreader"] = num
 		}
 	}
 
@@ -119,8 +133,11 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.HasPrefix(user_agent, "Down") ||
 		strings.Contains(user_agent, "GuzzleHttp") ||
 		strings.Contains(user_agent, "PaperLiBot") ||
+		strings.Contains(user_agent, "mj12bot") ||
 		strings.HasPrefix(user_agent, "AHC") ||
+		strings.HasPrefix(user_agent, "MBCrawler") ||
 		user_agent == "-" ||
+		user_agent == "test" ||
 		strings.HasPrefix(user_agent, "NewsBlur%20Feed%20Finder") {
 		return "Scanners/Crawlers", nil // UA
 	}
@@ -144,16 +161,24 @@ func normalize_user_agent(user_agent string) (string, error) {
 		return "Chrome OS", nil // UA
 	}
 
+	if strings.Contains(user_agent, "CFNetwork") && strings.Contains(user_agent, "Darwin") {
+		return "iPhone", nil // UA
+	}
+
 	return "", errors.New(fmt.Sprintf("Unknown UA: %s", user_agent))
 }
 
 func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch) {
 	ret := make(map[string]int)
 
+	fmt.Printf("Kicking off download of %s\n", *key)
+
 	object, err := s3_client.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String("run-parallel.sh-logs"),
 		Key:    key,
 	})
+
+	fmt.Printf("Downloaded %s\n", *key)
 
 	if err != nil {
 		log.Fatal(err)
@@ -175,6 +200,8 @@ func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch
 		return
 	}
 
+	fmt.Printf("Extracted %d bytes\n", len(bytes))
+
 	log_data := string(bytes)
 
 	lines := strings.Split(log_data, "\n")
@@ -189,8 +216,9 @@ func handle_record(s3_client *s3.Client, key *string, batches chan metrics_batch
 		var datetime_parts []string = parts[0:2]
 		uri := parts[7]
 		user_agent := parts[10]
+		source_ip := parts[4]
 
-		for k, v := range get_feed_subscribers(user_agent) {
+		for k, v := range get_feed_subscribers(user_agent, source_ip) {
 			ret[k] = v
 		}
 
@@ -232,7 +260,7 @@ func push_subscribers_to_ddb(ddb_client *dynamodb.Client, subscribers map[string
 	if err != nil {
 		log.Fatal(err)
 	} else {
-		fmt.Printf("Pushed subscribers to DDB")
+		fmt.Printf("Pushed subscribers to DDB\n")
 	}
 }
 

@@ -32,7 +32,7 @@ END
 
 IFS=$'\n'
 
-for i in `grep "// UA" ../metrics_pusher/main.go|cut -d'"' -f 2|sed -e 's/^/"/'|sed -e 's/$/"/'`; do
+for i in `grep "// UA" ../metrics_pusher/main.go|cut -d'"' -f 2|sed -e 's/^/"/'|sed -e 's/$/"/'|sort|uniq`; do
     cat >> get_all_clients.go <<END
     ret = append(ret, $i)
 END

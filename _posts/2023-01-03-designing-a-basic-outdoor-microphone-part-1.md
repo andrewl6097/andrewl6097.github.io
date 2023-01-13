@@ -53,7 +53,7 @@ As stated above - we need something that has I<sup>2</sup>S and an Ethernet MAC.
 
 For me, that requirement takes me to either [Microchip](https://www.microchip.com) or [ST Microelectronics](https://www.st.com).  Both have large product catalogs of microcontrollers - so worth starting there.
 
-Microchip has a super-handy [PDF brochure](https://ww1.microchip.com/downloads/aemDocuments/documents/MCT32/ProductDocuments/Brochures/60001455.pdf) which I'll reproduce here:
+Microchip has a super-handy [PDF brochure](https://ww1.microchip.com/downloads/en/DeviceDoc/30009904V.pdf) - the older version had a better table in it though, which I'll reproduce here:
 
 ![Microchip feature grid](/assets/img/microchip-brochure.png)
 

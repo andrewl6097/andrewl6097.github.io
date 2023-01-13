@@ -115,4 +115,4 @@ We're starting to get our arms around this.  But these are still 4 generally unf
 
 So my approach here is usually to start with breakout and test boards, with minimal components.  Small boards have faster turnarounds both in design and fabrication (cheaper to pay for expedited service - and may only need 2 layers).
 
-In Part 3 I will be detailing how I might choose what order to tackle prototype boards for these ICs in, how I walk through datasheets, and the schematic phase of the first breakout board.
+In [Part 3]({% post_url 2023-01-07-outdoor-mic-part-3-interpreting-the-first-datasheet-passive-component-selection-and-designing-the-first-breakout-board %}) I will be detailing how I might choose what order to tackle prototype boards for these ICs in, how I walk through datasheets, and the schematic phase of the first breakout board.
