@@ -124,7 +124,10 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.HasPrefix(user_agent, "python-requests") ||
 		strings.HasPrefix(user_agent, "Cairn-Grabber") ||
 		strings.HasSuffix(user_agent, "censys.io/)") ||
-		strings.Contains(user_agent, "bot@linkfluence)") ||
+		strings.Contains(user_agent, "bot@linkfluence") ||
+		strings.Contains(user_agent, "Nexgate") ||
+		strings.Contains(user_agent, "scpitspi-rs") ||
+		strings.HasPrefix(user_agent, "cortex") ||
 		strings.HasPrefix(user_agent, "okhttp") ||
 		strings.Contains(user_agent, "Anthill") ||
 		strings.Contains(user_agent, "http://sempi.tech/bot.html") ||
@@ -135,6 +138,7 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.Contains(user_agent, "PaperLiBot") ||
 		strings.Contains(user_agent, "mj12bot") ||
 		strings.HasPrefix(user_agent, "AHC") ||
+		strings.Contains(user_agent, "Twingly") ||
 		strings.HasPrefix(user_agent, "MBCrawler") ||
 		user_agent == "-" ||
 		user_agent == "test" ||
