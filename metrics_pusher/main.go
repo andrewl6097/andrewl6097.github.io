@@ -126,6 +126,7 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.HasSuffix(user_agent, "censys.io/)") ||
 		strings.Contains(user_agent, "bot@linkfluence") ||
 		strings.Contains(user_agent, "Nexgate") ||
+		strings.Contains(user_agent, "Scoop.it") ||
 		strings.Contains(user_agent, "wp_is_mobile") ||
 		strings.Contains(user_agent, "scpitspi-rs") ||
 		strings.HasPrefix(user_agent, "cortex") ||
