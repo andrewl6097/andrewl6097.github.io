@@ -44,7 +44,7 @@ That'll be important to come back to when selecting passive components.  So - wi
 
 ![p56](/assets/img/part5-6.png)
 
-I've noticed that the datasheet is a bit ambiguous about where the 10uF capacitors should be - the 0.1uF ones are bypass ones for the VDD pins, and the 10uF ones are for the internal regulator that's powered from VDDIO and output at VDDCORE - so I'll plan on just placing them nearby but not as close, space permitting.  There's also an ambiguity about whether there's a 10uF capacity *per VDDIO pin* - the diagram implies only the 0.1uF ones are per-pin - but given this section on the recommended components for the internal regulator later:
+I've noticed that the datasheet is a bit ambiguous about where the 10uF capacitors should be - the 0.1uF ones are bypass ones for the VDD pins, and the 10uF ones are for the internal regulator that's powered from VDDIO and output at VDDCORE - so I'll plan on just placing them nearby but not as close, space permitting.  There's also an ambiguity about whether there's a 10uF capacitor *per VDDIO pin* - the diagram implies only the 0.1uF ones are per-pin - but given this section on the recommended components for the internal regulator later:
 
 ![p57](/assets/img/part5-7.png)
 
@@ -60,7 +60,7 @@ I hate picking out external crystals and taking guesses at the values of support
 
 ### Programming and Debugging
 
-I have a challenge here that I'm going to try to mitigate in two ways.  I have a programmer - the [ATMEL-ICE](https://www.microchip.com/en-us/development-tool/ATATMEL-ICE) - but I've only ever used it to program AVR boards.  I have a really great kind of cable, the [Tag Connect](https://www.tag-connect.com/), which uses spring-loaded pins to let me attach said programmer to my PCB without any extra components (just bare pads).  What I need to triple-check is that the 10-pin "SAM" programming interface on my ATMEL-ICE can be used with my 10-pin-to-6-pin tag-connect cable, and to make sure I get the footprint exactly right.  I have a 10-pin-to-10-pin tag-connect cable, but it's 0.1" pin pitch on the header side, and my programmer has a 0.05" pin pitch.  Even then - I'd need to be careful to get the pin mappings right.
+I have a challenge here that I'm going to try to mitigate in two ways.  I have a programmer - the [ATMEL-ICE](https://www.microchip.com/en-us/development-tool/ATATMEL-ICE) - but I've only ever used it to program AVR (think Arduino) boards.  I have a really great kind of cable, the [Tag Connect](https://www.tag-connect.com/), which uses spring-loaded pins to let me attach said programmer to my PCB without any extra components (just bare pads).  What I need to triple-check is that the 10-pin "SAM" programming interface on my ATMEL-ICE can be used with my 10-pin-to-6-pin tag-connect cable, and to make sure I get the footprint exactly right.  I have a 10-pin-to-10-pin tag-connect cable, but it's 0.1" pin pitch on the header side, and my programmer has a 0.05" pin pitch.  Even then - I'd need to be careful to get the pin mappings right.
 
 It would really suck to order a board and not be able to program it.  So I'm going to use my multimeter and a tiny wire to test connectivity from each header-side pin to see which spring-loaded (or 'pogo') pin on the PCB side it matches to, and double-check that against the ATMEL-ICE [manual](https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-ICE_UserGuide.pdf).  I'm *also* going to whip up and order a tiny PCB that takes the 6-pin tag-connect footprint and maps it to some 0.1" pitch headers, and put some backup 0.1" pitch headers on the breakout PCB, just in case I need to do some swaps.  This way - I'll definitely be in a place where I will be able to program the breakout, and if I get the initial tag-connect footprint wrong, I'll be able to fix it for sure in the final product.
 
@@ -114,9 +114,9 @@ With that adventure out of the way - and a 1k pullup on the programming clock si
 
 A keen eye will notice that the programming pins overlap with the SERCOM 7 IOSET 1 pins we'd chosen for serial debug.  I switched them over to SERCOM0 IOSET 3 for which I wasn't using those pins for anything else.
 
-### Power Supply / Conclusion
+### PCB Power / Conclusion
 
-As mentioned above - I hope to be able to hook this up to a PoE breakout later, so for now I'll assume I'll find a 3.3V voltage source from somewhere else, and just put in a couple of header pins for +3.3V and GND.
+As mentioned above - I hope to be able to hook this up to a PoE breakout later, so for now I'll assume I'll find a 3.3V voltage source from somewhere else, and just put in a couple of header pins for 3.3V and GND.
 
 I think I'm going to stop there - this schematic isn't near done though.  What it needs next - which will be either Part 6 or Part 7 depending on when I can get to assembly of the I<sup>2</sup>S breakout - is the ethernet PHY and RJ45 jack, as well as breakout headers for the I<sup>2</sup>S signals, ideally ones that the microphone breakout board can just plug right into.  I'll also probably then look at the layout and just add breakout pins for every other I/O signal that looks easy to route, since that'll maximize the future use of this as a general-purpose microcontroller test platform for later projects.
 
@@ -129,7 +129,7 @@ Since we had to order that new cable, I've added a 'tools' row to this table:
 |PCBs|$2.70|
 |Stencils|$14.74|
 |Parts|$16.71|
-|Tools|$52.95|
-|**Total**|$87.10|
+|**Tools**|**$52.95**|
+|**Total**|**$87.10**|
 
 At least that cable will be re-usable forever in other projects!
