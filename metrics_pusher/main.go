@@ -137,6 +137,8 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.Contains(user_agent, "Mediatoolkitbot") ||
 		strings.HasPrefix(user_agent, "Down") ||
 		strings.HasPrefix(user_agent, "Scrapy") ||
+		strings.Contains(user_agent, "PetalBot") ||
+		strings.Contains(user_agent, "LivelapBot") ||
 		strings.Contains(user_agent, "GuzzleHttp") ||
 		strings.Contains(user_agent, "PaperLiBot") ||
 		strings.Contains(user_agent, "mj12bot") ||
@@ -254,7 +256,7 @@ func push_subscribers_to_ddb(ddb_client *dynamodb.Client, subscribers map[string
 	}
 
 	ddb_writes := make([]ddbtypes.WriteRequest, 0, len(subscribers))
-	epoch_seconds := time.Now().Unix() + 86400 // expire in a day
+	epoch_seconds := time.Now().Unix() + 86400*3 // expire in 3 days
 
 	for aggregator, count := range subscribers {
 		attrs := make(map[string]ddbtypes.AttributeValue)

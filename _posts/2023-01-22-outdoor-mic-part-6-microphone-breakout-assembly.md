@@ -1,7 +1,7 @@
 ---
 layout: post
 title: 'Outdoor Mic Part 6: Microphone Breakout Assembly (Take 1)'
-date: '2023-01-24 09:00:00 -0800'
+date: '2023-01-25 08:30:00 -0800'
 categories: []
 tags: ["PCB Assembly", "Outdoor Mic"]
 comments: false
