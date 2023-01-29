@@ -145,6 +145,7 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.Contains(user_agent, "internet-measurement.com") ||
 		strings.Contains(user_agent, "newspaper/") ||
 		strings.Contains(user_agent, "HTTPClient/1.0") ||
+		strings.HasPrefix(user_agent, "http.rb") ||
 		strings.Contains(user_agent, "awario.com") ||
 		strings.HasPrefix(user_agent, "AHC") ||
 		strings.Contains(user_agent, "Twingly") ||

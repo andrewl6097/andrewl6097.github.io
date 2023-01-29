@@ -1,6 +1,6 @@
 ---
 layout: post
-title: 'Outdoor Mic part 7: MCU breakout continued'
+title: 'Outdoor Mic Part 7: MCU breakout continued'
 date: '2023-01-28 08:45:00 -0800'
 categories: []
 tags: ["PCB Design", "Outdoor Mic"]
