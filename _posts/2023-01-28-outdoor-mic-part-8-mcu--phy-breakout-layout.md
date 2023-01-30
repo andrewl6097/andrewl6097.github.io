@@ -41,7 +41,7 @@ As a result of going through this I learn the following:
 
 ![p85](/assets/img/part8-5.png)
 
-* It calls for 75Ω resistors and 1nF capacitors to GND on each of the port-facing center gaps - luckily that's handled internally to the MagJack:
+* It calls for 75Ω resistors and 1nF capacitors to GND on each of the port-facing center taps - luckily that's handled internally to the MagJack:
 
 ![p86](/assets/img/part8-6.png)
 
