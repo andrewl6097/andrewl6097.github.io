@@ -150,6 +150,7 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.HasPrefix(user_agent, "AHC") ||
 		strings.Contains(user_agent, "Twingly") ||
 		strings.Contains(user_agent, "yandex.com/bots") ||
+		strings.Contains(user_agent, "gdnplus.com") ||
 		strings.HasPrefix(user_agent, "MBCrawler") ||
 		strings.HasPrefix(user_agent, "Xpanse") ||
 		user_agent == "-" ||
