@@ -101,6 +101,10 @@ func normalize_user_agent(user_agent string) (string, error) {
 		return "Mastodon Bot", nil // UA
 	}
 
+	if strings.Contains(user_agent, "toots.cat") {
+		return "Mastodon Bot", nil // UA
+	}
+
 	if strings.HasPrefix(user_agent, "Twitterbot/") {
 		return "Twitter Bot", nil // UA
 	}
@@ -153,14 +157,21 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.Contains(user_agent, "gdnplus.com") ||
 		strings.HasPrefix(user_agent, "MBCrawler") ||
 		strings.HasPrefix(user_agent, "Xpanse") ||
+		strings.Contains(user_agent, "NetcraftSurveyAgent") ||
+		strings.Contains(user_agent, "Cairn-Grabber") ||
 		user_agent == "-" ||
 		user_agent == "test" ||
 		strings.HasPrefix(user_agent, "NewsBlur%20Feed%20Finder") {
 		return "Scanners/Crawlers", nil // UA
 	}
 
-	if strings.Contains(user_agent, "%20Linux%20") {
+	if strings.Contains(user_agent, "%20Linux%20") ||
+		strings.Contains(user_agent, "(Linux%20") {
 		return "Linux", nil // UA
+	}
+
+	if strings.Contains(user_agent, "%20OpenBSD%20") {
+		return "OpenBSD", nil // UA
 	}
 
 	if strings.Contains(user_agent, "%20(Android%20") ||
