@@ -158,6 +158,7 @@ func normalize_user_agent(user_agent string) (string, error) {
 		strings.HasPrefix(user_agent, "MBCrawler") ||
 		strings.HasPrefix(user_agent, "Xpanse") ||
 		strings.Contains(user_agent, "NetcraftSurveyAgent") ||
+		strings.Contains(user_agent, "serendeputy-bot") ||
 		strings.Contains(user_agent, "Cairn-Grabber") ||
 		user_agent == "-" ||
 		user_agent == "test" ||
@@ -172,6 +173,10 @@ func normalize_user_agent(user_agent string) (string, error) {
 
 	if strings.Contains(user_agent, "%20OpenBSD%20") {
 		return "OpenBSD", nil // UA
+	}
+
+	if strings.Contains(user_agent, "%20FreeBSD%20") {
+		return "FreeBSD", nil // UA
 	}
 
 	if strings.Contains(user_agent, "%20(Android%20") ||
